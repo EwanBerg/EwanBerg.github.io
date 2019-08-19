@@ -1,216 +1,168 @@
-<!DOCTYPE doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-            <title>
-                Wallpaper - GreenMatrix
-            </title>
-            <meta content="cybeerboy" name="author">
-                <style type="text/css">
-                    * {
-			margin: 0;
-			padding: 0;
-		}
-		body {
-			background: #000;
-			overflow: hidden;
-			}
-		canvas {
-			display: block;
-			}
-                </style>
-                <!--[if lt IE 9]>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
-	<![endif]-->
-            </meta>
-        </meta>
-    </head>
-    <body>
-        <canvas id="greenmatrix">
-        </canvas>
-        <script type="text/javascript">
-            var MatrixChars = false;
-		var fps;
-		var fpsInterval;
-		var mcolor = '#00f';
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>轨迹回放</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <style>
+        html, body, #container {
+            height: 100%;
+            width: 100%;
+        }
 
-		var startTime, now, then, elapsed;
-		var font_size = 10;
-		var c = document.getElementById("greenmatrix");
-		var ctx = c.getContext("2d");
-		ctx.font = font_size + "px arial";	
-		
-		c.height = window.innerHeight;
-		c.width = window.innerWidth;
-		
-		var letters = "1234567890#ABCDEFGHIJKLMNOPQRSTUVWXYZ";		
-		letters = letters.split('');
-		
-		var columns = c.width/font_size;
-		var drops = [];
-		for(var x = 0; x < columns; x++)  
-		{
-			drops[x] = 1; 
-		}
+        .input-card .btn{
+            margin-right: 1.2rem;
+            width: 9rem;
+        }
 
-		window.onload = function () {
-			window.wallpaperPropertyListener = {
-			    applyUserProperties: function(properties) 
-			    {					
-		            if (properties.custombool.value) 
-		            {
-		                window.MatrixChars = true;
-		                window.fps = properties.customint.value;
-		            } 
-		            else 
-		            {
-		                window.MatrixChars = false;
-		                window.fps = properties.customint.value;
-		            }
+        .input-card .btn:last-child{
+            margin-right: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<!-- <div class="input-card">
+    <h4>轨迹回放控制</h4>
+    <div class="input-item">
+        <input type="button" class="btn" value="开始动画" id="start" onclick="Map.startAnimation()"/>
+        <input type="button" class="btn" value="暂停动画" id="pause" onclick="Map.pauseAnimation()"/>
+    </div>
+    <div class="input-item">
+        <input type="button" class="btn" value="继续动画" id="resume" onclick="Map.resumeAnimation()"/>
+        <input type="button" class="btn" value="停止动画" id="stop" onclick="Map.stopAnimation()"/>
+    </div>
+</div> -->
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=您申请的key值"></script>
+<script>
+    // var marker, lineArr = [[116.478935,39.997761],[116.478939,39.997825],[116.478912,39.998549],[116.478912,39.998549],[116.478998,39.998555],[116.478998,39.998555],[116.479282,39.99856],[116.479658,39.998528],[116.480151,39.998453],[116.480784,39.998302],[116.480784,39.998302],[116.481149,39.998184],[116.481573,39.997997],[116.481863,39.997846],[116.482072,39.997718],[116.482362,39.997718],[116.483633,39.998935],[116.48367,39.998968],[116.484648,39.999861]];
+    // this.hello = 'hello'
+    var marker
+    var Map = {
+        lineArr:[], //移动数组
+        center:[], //中心
+        init:function(){
+            console.log(Map.lineArr)
+            var map = new AMap.Map("container", {
+                resizeEnable: true,
+                center: Map.center,
+                zoom: 17
+            });
 
-		            if(properties.customcombo.value == 1) {
-		            	window.mcolor = '#05f';
-		            }
+            marker = new AMap.Marker({
+                map: map,
+                position: Map.lineArr[0],
+                icon: "https://webapi.amap.com/images/car.png",
+                offset: new AMap.Pixel(-26, -13),
+                autoRotation: true,
+                angle:-90,
+            });
 
-		            if(properties.customcombo.value == 2) {
-		            	window.mcolor = '#e60000';	
-		            }
+            var polyline = new AMap.Polyline({
+                map: map,
+                path: Map.lineArr,
+                showDir:true,
+                strokeColor: "#28F",  //线颜色
+                // strokeOpacity: 1,     //线透明度
+                strokeWeight: 6,      //线宽
+                // strokeStyle: "solid"  //线样式
+            });
+            var passedPolyline = new AMap.Polyline({
+                map: map,
+                // path: lineArr,
+                strokeColor: "#AF5",  //线颜色
+                // strokeOpacity: 1,     //线透明度
+                strokeWeight: 6,      //线宽
+                // strokeStyle: "solid"  //线样式
+            });
 
-		            if(properties.customcombo.value == 3) {
-		            	window.mcolor = '#1919ff';	
-		            }
+            marker.on('moving', function (e) {
+                passedPolyline.setPath(e.passedPath);
+            });
 
-		            if(properties.customcombo.value == 4) {
-		            	window.mcolor = '#ffffff';	
-		            }	
+            map.setFitView();
+            // alert(1111)
+            // alert(Map.center,Map.lineArr)
+        },
 
+        startAnimation:function(){
+            marker.moveAlong(Map.lineArr, 500);
+        },
+        pauseAnimation:function(){
+            marker.pauseMove();
+        },
+        resumeAnimation:function(){
+            marker.resumeMove();
+        },
+        stopAnimation:function(){
+            marker.stopAnimation();
+        }
+    }
 
-		            startAnimating();
-			    }
-			};
+    // function drawMap(lineArr){
+    //         var map = new AMap.Map("container", {
+    //             resizeEnable: true,
+    //             center: [116.397428, 39.90923],
+    //             zoom: 17
+    //         });
 
-			var json = {"custombool" : 
-						{
-							"text" : "Different Matrix Characters",
-							"type" : "bool",
-							"value" : false
-						},
-						"customcombo" : 
-						{
-							"options" : 
-							[
-								{
-									"label" : "Green",
-									"value" : 1
-								},
-								{
-									"label" : "Red",
-									"value" : 2
-								},
-								{
-									"label" : "Blue",
-									"value" : 3
-								},
-								{
-									"label" : "White",
-									"value" : 4
-								}
-							],
-							"text" : "Matrix Color",
-							"type" : "combo",
-							"value" : 1
-						},
-						"customint" : 
-						{
-							"max" : 60,
-							"min" : 10,
-							"text" : "Matrix Speed",
-							"type" : "slider",
-							"value" : 25
-						},
-						"schemecolor" : 
-						{
-							"order" : 0,
-							"text" : "Windows Color",
-							"type" : "color",
-							"value" : "46 46 46"
-						}
-		};
-		window.wallpaperPropertyListener.applyUserProperties(json);
+    //         marker = new AMap.Marker({
+    //             map: map,
+    //             position: [116.478935,39.997761],
+    //             icon: "https://webapi.amap.com/images/car.png",
+    //             offset: new AMap.Pixel(-26, -13),
+    //             autoRotation: true,
+    //             angle:-90,
+    //         });
 
-		};
+    //        var polyline = new AMap.Polyline({
+    //             map: map,
+    //             path: lineArr,
+    //             showDir:true,
+    //             strokeColor: "#28F",  //线颜色
+    //             // strokeOpacity: 1,     //线透明度
+    //             strokeWeight: 6,      //线宽
+    //             // strokeStyle: "solid"  //线样式
+    //         })
+    //         //alert(JSON.stringify(lineArr))
+
+    //         var passedPolyline = new AMap.Polyline({
+    //             map: map,
+    //             // path: lineArr,
+    //             strokeColor: "#AF5",  //线颜色
+    //             // strokeOpacity: 1,     //线透明度
+    //             strokeWeight: 6,      //线宽
+    //             // strokeStyle: "solid"  //线样式
+    //         });
 
 
-		window.addEventListener('resize', function()
-		{
-			c.height = window.innerHeight;
-			c.width = window.innerWidth;
-			columns = c.width/font_size;
-			drops = [];
-			for(var x = 0; x < columns; x++)
-				drops[x] = 1;
-		}, false );
+    //         marker.on('moving', function (e) {
+    //             passedPolyline.setPath(e.passedPath);
+    //         });
 
+    //         map.setFitView();
 
-		function drawmatrix()
-		{
-			ctx.fillStyle = "rgba(0, 0, 0, 0.05)";	
-			ctx.fillRect(0, 0, c.width, c.height);
-			ctx.fillStyle = mcolor;	
-								
-			for(var i = 0; i < drops.length; i++)
-			{
-				var text = letters[Math.floor(Math.random()*letters.length)];
-				ctx.fillText(text, i*font_size, drops[i]*font_size);
-				if(drops[i]*font_size > c.height && Math.random() > 0.975)
-					drops[i] = 0;
-				
-				drops[i]++;
-			}
-		}
+    
+    // }
 
-	
-		function loop()
-		{	
-			if(MatrixChars)
-			{
-                window.letters = generateChars();
-			} 
-			else 
-			{
-				window.letters = "1234567890#ABCDEFGHIJKLMNOPQRSTUVWXYZ";		
-				letters = letters.split('');
-			}
+    // function startAnimation () {
+    //             marker.moveAlong(lineArr, 500);
+    //         }
 
-		    window.requestAnimationFrame(loop);
-	        now = Date.now();
-			elapsed = now - then;
-		    if (elapsed > fpsInterval) 
-		    {
-		        then = now - (elapsed % fpsInterval);
-		        drawmatrix();	
-		    }			
-		}
-		
-		function startAnimating() 
-		{		    
-		    fpsInterval = 1000 / fps;
-		    then = Date.now();
-		    startTime = then;
-		    loop();
-		}
+    //         function pauseAnimation () {
+    //             marker.pauseMove();
+    //         }
 
-		function generateChars() 
-		{
-		  var chars = '0123456789';
-		  for (var i = 0; i <= 55; i++) 
-		  {
-		    chars += String.fromCharCode(i + 65382);
-		  }
-		  
-		  return chars.split('');
-		}
-        </script>
-    </body>
+    //         function resumeAnimation () {
+    //             marker.resumeMove();
+    //         }
+
+    //         function stopAnimation () {
+    //             marker.stopMove();
+    //         }
+
+</script>
+</body>
 </html>
-
